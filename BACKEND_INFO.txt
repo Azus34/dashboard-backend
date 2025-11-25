@@ -1,0 +1,26 @@
+Colibri Dashboard Backend
+
+API REST para gestión de transporte compartido
+
+Instalación:
+npm install
+
+Variables de entorno (.env):
+- DATABASE_URL: Conexión a PostgreSQL
+- PG_SSL: Usar SSL (true/false)
+- MONGODB_URI: Conexión a MongoDB
+- PORT: Puerto del servidor (default: 5000)
+
+Ejecutar:
+npm run dev
+
+Estructura de rutas:
+- /api/transactions - Gestión de transacciones
+- /api/finances - Recargas y retiros
+- /api/earnings - Cálculo de ganancias (15% comisión)
+- /api/routes - Gestión de viajes
+- /api/users - Gestión de usuarios (conductores y pasajeros)
+
+Bases de datos:
+- PostgreSQL: Usuarios, transacciones, perfiles
+- MongoDB: Rutas y viajes
