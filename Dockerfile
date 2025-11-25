@@ -6,9 +6,6 @@ RUN npm install
 
 COPY . .
 
-# Si es NestJS → compila
-RUN npm run build
-
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
