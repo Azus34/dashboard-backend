@@ -4,7 +4,6 @@
   "description": "Backend para dashboard de Colibri Arroyo Seco",
   "main": "server.js",
   "scripts": {
-    "build": "nest build",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
