@@ -1,34 +1,36 @@
-// Rutas de ganancias (comisiones del 15%)
+// Rutas de ganancias (comisiones del 15% de reservas completadas)
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/postgres');
-const Route = require('../models/Route');
 
-// Obtener ganancias totales (15% comisión)
+// Obtener ganancias totales (15% comisión de reservas completadas)
 router.get('/total', async (req, res) => {
   try {
     const query = `
       SELECT 
-        SUM(amount_cents) as total_amount,
-        COUNT(*) as total_transactions
-      FROM wallet_ledger
+        SUM(price) as total_amount,
+        COUNT(*) as total_completed
+      FROM reservations
+      WHERE status = 'COMPLETED'
     `;
     const result = await pool.query(query);
     const row = result.rows[0];
     
     const totalAmount = parseFloat(row.total_amount || 0);
-    const totalEarnings = (totalAmount * 0.15) / 100; // 15% commission
+    const totalEarnings = totalAmount * 0.15; // 15% commission
+
+    console.log(`Reservas completadas: ${row.total_completed}, Monto total: ${totalAmount}, Ganancias: ${totalEarnings}`);
 
     res.json({
       totalEarnings: totalEarnings,
-      totalTransactions: parseInt(row.total_transactions || 0),
+      totalTrips: parseInt(row.total_completed || 0),
       commissionPercentage: 15,
     });
   } catch (error) {
     console.error('Error:', error);
     res.json({
       totalEarnings: 0,
-      totalTransactions: 0,
+      totalTrips: 0,
       commissionPercentage: 15,
     });
   }
@@ -40,9 +42,10 @@ router.get('/by-period', async (req, res) => {
     const query = `
       SELECT 
         DATE(created_at) as date,
-        SUM(CASE WHEN type IN ('deposit', 'recharge', 'TOPUP', 'REFUND') THEN amount_cents ELSE 0 END) as daily_total,
-        COUNT(*) as transaction_count
-      FROM wallet_ledger
+        SUM(price) as daily_total,
+        COUNT(*) as trip_count
+      FROM reservations
+      WHERE status = 'COMPLETED'
       GROUP BY DATE(created_at)
       ORDER BY DATE(created_at) DESC
       LIMIT 30
@@ -52,14 +55,14 @@ router.get('/by-period', async (req, res) => {
     // Calcular comisiones del 15%
     const earningsWithCommission = result.rows.map(row => ({
       date: row.date,
-      earnings: (parseFloat(row.daily_total || 0) * 0.15) / 100, // Convertir de centavos
-      transactions: parseInt(row.transaction_count || 0)
+      earnings: parseFloat(row.daily_total || 0) * 0.15,
+      trips: parseInt(row.trip_count || 0)
     }));
 
     res.json(earningsWithCommission);
   } catch (error) {
     console.error('Error:', error);
-    res.json([]); // Return empty array on error
+    res.json([]);
   }
 });
 
@@ -68,24 +71,23 @@ router.get('/by-driver', async (req, res) => {
   try {
     const query = `
       SELECT 
-        wl.user_id,
-        u.full_name,
-        SUM(wl.amount_cents) as total_amount,
-        COUNT(*) as transaction_count
-      FROM wallet_ledger wl
-      LEFT JOIN users u ON wl.user_id = u.id
-      GROUP BY wl.user_id, u.full_name
+        driver_id,
+        SUM(price) as total_amount,
+        COUNT(*) as trip_count
+      FROM reservations
+      WHERE status = 'COMPLETED'
+      GROUP BY driver_id
       ORDER BY total_amount DESC
       LIMIT 50
     `;
     const result = await pool.query(query);
     
     const driverEarnings = result.rows.map(row => ({
-      userId: row.user_id,
-      driverName: row.full_name || 'Unknown',
-      totalAmount: parseFloat(row.total_amount || 0) / 100,
-      earnings: (parseFloat(row.total_amount || 0) * 0.15) / 100,
-      transactions: parseInt(row.transaction_count || 0)
+      driverId: row.driver_id,
+      driverName: row.driver_id, // Podrías hacer JOIN con users si tienes nombres
+      totalCost: parseFloat(row.total_amount || 0),
+      earnings: parseFloat(row.total_amount || 0) * 0.15,
+      trips: parseInt(row.trip_count || 0)
     }));
 
     res.json(driverEarnings);
