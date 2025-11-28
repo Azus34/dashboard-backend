@@ -4,13 +4,24 @@ const router = express.Router();
 const pool = require('../config/postgres');
 
 // Obtener todos los conductores
+// Usando INNER JOIN: users -> user_roles -> roles (donde roles.code = 'DRIVER')
 router.get('/drivers', async (req, res) => {
   try {
     const query = `
-      SELECT u.id, u.full_name, u.email, dp.phone_number, dp.license_number, 
-             dp.vehicle_brand, dp.vehicle_model, dp.vehicle_year, dp.status, dp.rating_avg
+      SELECT 
+        u.id, 
+        u.full_name, 
+        u.email, 
+        u.is_active,
+        u.created_at,
+        u.date_birth,
+        r.code as role,
+        r.label as role_label
       FROM users u
-      JOIN driver_profiles dp ON u.id = dp.user_id
+      INNER JOIN user_roles ur ON u.id = ur.user_id
+      INNER JOIN roles r ON ur.role_id = r.id
+      WHERE r.code = 'DRIVER'
+      ORDER BY u.created_at DESC
       LIMIT 100
     `;
     const result = await pool.query(query);
@@ -25,11 +36,19 @@ router.get('/drivers', async (req, res) => {
 router.get('/drivers/:id', async (req, res) => {
   try {
     const query = `
-      SELECT u.id, u.full_name, u.email, dp.phone_number, dp.license_number, 
-             dp.vehicle_brand, dp.vehicle_model, dp.vehicle_year, dp.status, dp.rating_avg
+      SELECT 
+        u.id, 
+        u.full_name, 
+        u.email, 
+        u.is_active,
+        u.created_at,
+        u.date_birth,
+        r.code as role,
+        r.label as role_label
       FROM users u
-      JOIN driver_profiles dp ON u.id = dp.user_id
-      WHERE u.id = $1
+      INNER JOIN user_roles ur ON u.id = ur.user_id
+      INNER JOIN roles r ON ur.role_id = r.id
+      WHERE r.code = 'DRIVER' AND u.id = $1
     `;
     const result = await pool.query(query, [req.params.id]);
     if (result.rows.length === 0) {
@@ -42,15 +61,25 @@ router.get('/drivers/:id', async (req, res) => {
   }
 });
 
-// Obtener todos los pasajeros
+// Obtener todos los pasajeros (customers/users)
+// Usando INNER JOIN: users -> user_roles -> roles (donde roles.code = 'USER')
 router.get('/customers', async (req, res) => {
   try {
     const query = `
-      SELECT u.id, u.full_name, u.email, cp.phone_number, cp.default_country, 
-             cp.preferences, cp.status, wa.balance_cents
+      SELECT 
+        u.id, 
+        u.full_name, 
+        u.email, 
+        u.is_active,
+        u.created_at,
+        u.date_birth,
+        r.code as role,
+        r.label as role_label
       FROM users u
-      JOIN customer_profiles cp ON u.id = cp.user_id
-      LEFT JOIN wallet_accounts wa ON u.id = wa.user_id
+      INNER JOIN user_roles ur ON u.id = ur.user_id
+      INNER JOIN roles r ON ur.role_id = r.id
+      WHERE r.code = 'USER'
+      ORDER BY u.created_at DESC
       LIMIT 100
     `;
     const result = await pool.query(query);
@@ -65,12 +94,19 @@ router.get('/customers', async (req, res) => {
 router.get('/customers/:id', async (req, res) => {
   try {
     const query = `
-      SELECT u.id, u.full_name, u.email, cp.phone_number, cp.default_country, 
-             cp.preferences, cp.status, wa.balance_cents
+      SELECT 
+        u.id, 
+        u.full_name, 
+        u.email, 
+        u.is_active,
+        u.created_at,
+        u.date_birth,
+        r.code as role,
+        r.label as role_label
       FROM users u
-      JOIN customer_profiles cp ON u.id = cp.user_id
-      LEFT JOIN wallet_accounts wa ON u.id = wa.user_id
-      WHERE u.id = $1
+      INNER JOIN user_roles ur ON u.id = ur.user_id
+      INNER JOIN roles r ON ur.role_id = r.id
+      WHERE r.code = 'USER' AND u.id = $1
     `;
     const result = await pool.query(query, [req.params.id]);
     if (result.rows.length === 0) {
