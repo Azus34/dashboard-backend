@@ -15,8 +15,18 @@ const aiRoutes = require('./routes/ai');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Middleware - CORS configurado para producción
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://dashboard-frontend-jlpr.onrender.com',
+    'https://dashboard-frontend.onrender.com'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Conectar MongoDB
